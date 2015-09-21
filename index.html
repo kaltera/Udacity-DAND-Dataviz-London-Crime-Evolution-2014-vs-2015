@@ -407,6 +407,8 @@
 
             })
             .on("mouseout", function(d){
+
+            	// If the user leaves the link with his mouse, we get back to the statistics of all boroughs
             	d3.select("div.borough").remove();
             	d3.select("div.ranking").remove();
             	d3.select("table.summary").remove();
@@ -474,20 +476,21 @@
             return d.key;
           });
 
-          // On the second column I insert the count of crimes for that sub-category
+          // On the second column I insert the count of crimes for that sub-category in 2014 season
           tds.append("td")
           .attr("class","summary")
           .text(function(d){
             return d.values['2014'].toLocaleString();
           });
 
-          // On the second column I insert the count of crimes for that sub-category
+          // On the second column I insert the count of crimes for that sub-category in 2015 season
           tds.append("td")
           .attr("class","summary")
           .text(function(d){
             return d.values['2015'].toLocaleString();
           });
 
+          // On the third column I insert the calculated trend in % including a styling (Red/Green vs Up/Down-arrow depending on the trend)
           tds.append("td")
           .attr("class","summary")
           .html(function(d){
