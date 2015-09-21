@@ -1,0 +1,137 @@
+
+    table + table{
+      margin-top: 20px;
+    }
+
+    /* Background image of London*/
+    #bgimage {
+    background-image: url("London_map.png");
+    }
+
+    html{
+      font-family: Verdana;
+    }
+
+    div.checkboxes{
+      position:absolute;
+      left:1050px;
+      top:150px;
+      width:600px;
+      height:270px;
+    }
+
+    div.summary{
+      position:absolute;
+      left:1060px;
+      top:520px;
+      width:600px;
+      height:270px;
+    }
+
+    
+    .title{
+      position:absolute;
+      top:20px;
+      left:70px;
+      width:900px;
+      font-size:20pt;
+      text-align:center;
+    }
+
+    .dates{
+      position:absolute;
+      top:60px;
+      left:70px;
+      width:900px;
+      font-size:14pt;
+      text-align:center;
+    }
+
+    .explanatory{
+      position:absolute;
+      top:100px;
+      left:70px;
+      width:900px;
+      font-size:14pt;
+      text-align:center;
+      font-style:italic;
+    }
+
+    .legend{
+      font-size:10pt;
+    }
+
+    div.borough{
+       top:430px;
+       left:1060px;
+       font-size:20pt;
+       vertical-align:top;
+       height:50px;
+       position:absolute;
+    }
+
+    input[type=radio]{
+      width:20px;
+      height:20px;
+      vertical-align:top;
+    }
+
+    table.radio{
+      border-spacing:0.4em;
+    }
+
+    label{
+      vertical-align:bottom;
+    }
+
+    .tooltip{
+      font-family: Verdana;
+      font-weight: bold;
+      position:absolute;
+      visibility:hidden;
+    }
+    div.ranking{
+      top:440px;
+      left:1280px;
+      vertical-align:top;
+      height:50px;
+      position:absolute;
+    }
+    a.link{
+      cursor:default;
+      font-size:10pt;
+    }
+
+    /* Style for summary table, header is different than content and consecutive rows have slightly different colors*/
+
+    table.summary { 
+      color: #333;
+      font-family: Helvetica, Arial, sans-serif;
+      width: 80%; 
+      border-spacing: 0; 
+      text-align: left;
+    }
+
+      td.summary, th.summary { 
+      border: 1px solid transparent;
+      height: 25px; 
+      }
+
+      th.summary {
+      background: #DFDFDF;
+      font-weight: bold;
+      }
+
+      td.summary {
+      background: #FAFAFA;
+      }
+
+      span{
+        font-size:14pt;
+      }
+
+      tr.summary:nth-child(even) td.summary { background: #F1F1F1; }   
+
+      tr.summary:nth-child(odd) td.summary { background: #FEFEFE; }  
+
+      tr.summary td.summary:hover { background: #666; color: #FFF; }

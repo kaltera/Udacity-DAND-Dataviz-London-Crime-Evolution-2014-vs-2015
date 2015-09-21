@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="Style.css">
+    <script type="text/javascript">  
+
+      // Function to draw the boroughs boundaries through geojson file
+      function draw_map(geo_data) {
+
+        // Setting up size variables
+        var margin = 100,
+            width = 1600,
+            height = 1000;
+
+        // Appending SVG element in html body
+        var svg = d3.select("body")
+            .append("svg")
+            .attr("width", width - margin)
+            .attr("height", height - margin)
+            .attr("transform","translate(0,100)");
+
+        // Appending Title of Visualization
+        d3.select("body")
+        .append("div")
+        .attr("class","title")
+        .text("Evolution of Crimes in London Boroughs (excl. City)");
+
+        // Appending sub titles of Visualization
+        d3.select("body")
+        .append("div")
+        .attr("class","dates")
+        .text("2014 vs 2015");
+
+        // Appending findings for the current crime type (Burglary by default)
+        d3.select("body")
+        .append("div")
+        .attr("class","explanatory")
+        .text("Burglary in steady decline except Hammersmith&Fulham and Merton with slight increase");
+
+
+        // Creating pattern in order to place the London Image in the background
+        d3.select("svg")
+        .append("defs")
+        .append("pattern")
+        .attr("id","bgimage")
+        .attr("patternUnits","userSpaceOnUse")
+        .attr("width",900)
+        .attr("height",693)
+        .append("image")
+        .attr("xlink:href","London_map.png")
+        .attr("x","0")
+        .attr("y","0")
+        .attr("width",900)
+        .attr("height",693);
+
+        d3.select("svg")
+        .append("rect")
+        .attr("transform","translate(70,130)")
+        .style("fill","url(#bgimage)")
+        .attr("x","0")
+        .attr("y","0")
+        .attr("width",900)
+        .attr("height",693);
+
+        // Crearing a G element in SVG to draw the boroughs boundaries
+        d3.select("svg")
+            .append('g')
+            .attr('class', 'map')
+            .attr("transform","translate(0,200)");     
+
+        // Setting up projections variable with lat/lon of the center and scale
+        var projection = d3.geo.mercator()
+        .center([-0.124969482421875,51.50788772102843])
+        .scale(58000);
+
+        // Setting up path for boundaries
+        var path = d3.geo.path().projection(projection)
+
+        // Appending path for each of the boundaries available in the geojson file and naming the class after the borough's name
+        var map_boroughs = d3.select("g").selectAll("path")
+        .data(geo_data.features)
+        .enter()
+        .append("path")
+        .attr("d",path)
+        .attr("class",function(d){
+          return d.properties.Name;})
+        .style("fill","white")
+        .style("opacity",0.6)
+        .style("stroke","black")
+        .style("stroke-width",0.9);
+
+        // Setting up variable with ordinal scales of colors from colorbrewer
+        var brewer = ['rgb(0,104,55)','rgb(26,152,80)','rgb(102,189,99)','rgb(166,217,106)','rgb(217,239,139)','rgb(255,255,191)','rgb(254,224,139)','rgb(253,174,97)','rgb(244,109,67)','rgb(215,48,39)','rgb(165,0,38)'];
+
+        // Setting up variable for text assigned to each color
+        var legend_text = ["-25%","-20%","-15%","-10%","-5%","0%","+5%","+10%","+15%","+20%","+25%"];
+
+        // Adding a g element for the legend at the bottom of the map
+        var legend_size = svg.append("g")
+        .attr("class","legend")
+        .attr("transform","translate(50," + (height - margin - 50) + ")")
+        .selectAll("g")
+        .data(brewer)
+        .enter();
+
+        // Appending a rectangle for each of the colours
+        legend_size.append("rect")
+        .attr("x",function(d,i){
+          return (i+1) * 69;
+        })
+        .attr("y",0)
+        .attr("width","70px")
+        .attr("height","20px")
+        .style("opacity",0.6)
+        .style("fill",function(d){return d;});
+
+        // Appending the corresponding text below the colour
+        legend_size.append("text")
+        .attr("x",function(d,i){
+          return (i+1) * 70 + 15;
+        })
+        .attr("y",40)
+        .text(function(d,i){
+          return legend_text[i];
+        });
+
+      };
+
+
+      // Function to add surrounding data for the map, including radio buttons for the crimes and summary for each borough
+      function draw_data(data){
+
+      	// Creating dictionary to include the findings for each crime type
+      	var crime_titles = {}
+      	crime_titles["Burglary"] = "Burglary in steady decline except Hammersmith&Fulham and Merton with slight increase";
+      	crime_titles["Criminal Damage"] = "Criminal Damage increasing in all boroughs, from 1 to 29.5%";
+      	crime_titles["Drugs"] = "Battle against Drug Trafficking/Consumption improved in all boroughs except in Lambeth and Kingston upton Thames";
+      	crime_titles["Robbery"] = "While most of the boroughs managed to tackle robberies efficiently, the North-East of London remains an issue";
+      	crime_titles["Sexual Offences"] = "Kensington and Chelsea surprisingly improves while all other boroughs suffer heavy increases";
+      	crime_titles["Theft & Handling"] = "With an overall improvement of 1.9%, Theft & Handling remains mostly unchanged";
+      	crime_titles["Violence Against The Person"] = "With a staggering 24.5% average increase in Violence Against the Person, this becomes London's biggest worry";
+
+        // Creating a nested dataset including each crime type (MajorText). This is another way to get a Set
+        var nested = d3.nest()
+        .key(function(d){return d.MajorText})
+        .entries(data);
+
+        // Sorting the "Set" by key name
+        nested = nested.sort(function(a, b){return d3.ascending(a.key, b.key)});
+
+        // Setting attribute variable to first crime type
+        var attribute = nested[0].key;
+
+        // Creating a table for my radio buttons
+        d3.select("body")
+        .append("div")
+        .attr("class","checkboxes")
+        .append("table")
+        .attr("class","radio")
+        .append("tr")
+        .append("td")
+        .style("font-size","20pt")
+        .style("vertical-align","top")
+        .text("Crime Type");
+
+        // Crearing a div for the details summary
+        d3.select("body")
+        .append("div")
+        .attr("class","summary");
+
+        // Setting up variable to call later on for appending lines and columns
+        var checkboxes = d3.select(".radio");
+
+        // Setting up variables with the Set in order to create lines and columns for each crime type button and corresponding text
+        var trs = checkboxes.selectAll("table").data(nested);
+        var tds = trs.enter().append("tr").append("td");
+
+        // Adding the radio button on the first column
+        tds.append("input")
+        .attr("type","radio")
+        .attr("id",function(d){return d.key;})
+        .attr("value",function(d){return d.key;})
+        .property("checked",function(d){
+          if(d.key === nested[0].key){
+            return true;
+          }
+          else{
+            return false;
+          }
+        })
+        .attr("name","country_selector")
+        .on("change", function(){
+
+          // On change for the radio button. Getting attribute name that has been selected
+          attribute = this.value;
+
+          // Changing the text of the findings as the crime type has changed
+          d3.select(".explanatory")
+          .text(crime_titles[attribute]);
+
+          // I remove the summary
+          d3.select("table.summary").remove();
+          d3.select("div.borough").remove();
+          d3.select("table.total").remove();
+          d3.select("div.ranking").remove();
+
+          // I call insert_summary function to update the summary because of the change
+          insert_summary(data,"All Boroughs",attribute)
+
+          // I call draw_attribute function to draw colours for each borough
+          draw_attribute(data,attribute);
+        });
+
+        // Adding the label element to the radio button in the second column
+        tds.append("label")
+        .attr("for",function(d){return d.key;})
+        .text(function(d){return d.key;});
+
+        // Adding a tooltip
+        var tooltip = d3.select("body")
+        .append("div")
+        .attr("class","tooltip");
+
+        // For each borough boundary (path)
+        d3.selectAll("path")
+        .on("mouseover", function(d){
+
+          // If the mouse is over the boundary, we display the tooltip
+          tooltip.style("visibility", "visible");
+
+          // We remove the summary details
+          d3.select("table.summary").remove();
+          d3.select("div.borough").remove();
+          d3.select("table.total").remove();
+          d3.select("div.ranking").remove();
+
+          // We add a new summary corresponding to the boundary where the mouse is
+          insert_summary(data,d.properties.Name.split(" ")[0],attribute);
+        })
+        .on("mousemove", function(d){
+          // If the mouse move, the tooltip moves with the mouse and displays the borough's name
+          tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px").text(d.properties.Name);})
+        .on("mouseout", function(){
+
+          // If the mouse goes out of the boundary
+          tooltip.style("visibility", "hidden");
+
+          // We remove the summary details
+          d3.select("table.summary").remove();
+          d3.select("div.borough").remove();
+          d3.select("table.total").remove();
+
+          // We insert the summary for all boroughs instead of the current borough
+          insert_summary(data,"All Boroughs",attribute);
+        });
+
+
+        // Function to insert/update summary
+        function insert_summary(data,borough,attribute){
+          
+          // Setting overall population to All Boroughs population : 8,650,200
+          var population = 8650200;
+
+          // Aggregating function to get a count for each of the sub-categories of crimes
+          function agg_details(leaves){
+
+          	// For each nested element, I calculate the trend from 2014 (2013-2014) to 2015 (2014-2015)
+
+	      	  var previous_year = d3.sum(leaves,function(d){
+	            	if(d.Season === "2013-2014"){
+	            	return d['CrimeCount'];
+	            }});
+
+	      	  var current_year = d3.sum(leaves,function(d){
+					if(d.Season === "2014-2015"){
+	            	return d['CrimeCount'];
+	            }});
+
+	          return{
+	            '2014' : previous_year,
+	            '2015' : current_year,
+	            'Trend' : d3.round((current_year - previous_year)*100/previous_year,1)
+	          }
+            }
+
+
+          // If the summary to include is for "All Boroughs"
+          if (borough === "All Boroughs"){
+
+            // The name to display is "All Boroughs"
+            var borough_full = "All Boroughs";
+
+            // I filter the full dataset by the crime category that is selected on the radio buttons
+            var boroughs_attribute = data
+            .filter(function(d){
+              return d.MajorText === attribute;
+            });
+
+            // I then nest this dataset by sub-category to get full details (count of crimes) for each sub-category
+            var attribute_details = d3.nest()
+            .key(function(d){
+              return d.MinorText;
+            })
+            .rollup(agg_details)
+            .entries(boroughs_attribute);
+
+            // Creating another variable nesting the dataset by Borough. This allows me to order the dataset by the trend and to do a ranking system
+            var boroughs_ranking = d3.nest()
+            .key(function(d){
+            	return d.Borough;
+            })
+            .rollup(agg_details)
+            .entries(boroughs_attribute)
+            .sort(function(a, b){return d3.ascending(a.values['Trend'], b.values['Trend'])});;
+
+            // Creating a link that will display the ranking as soon as the user puts his mouse over it
+            d3.select("body")
+            .append("div")
+            .attr("class","ranking")
+            .append("a")
+            .on("mouseover", function(d){
+
+            	// Once the mouse is over, I remove the summary table of sub-categories
+              	d3.select("table.summary").remove();
+	          	d3.select("table.total").remove();
+
+		          // I append a table in order to insert the ranking
+		          summary = d3.select(".summary")
+		          .append("table")
+		          .attr("class","summary");
+
+		          // I add a header for the table including the rank, borough's name and trend
+		          summary.append("tr").attr("class","summary").append("th").attr("width","10%").attr("class","summary").text("Rank");
+		          d3.select("table.summary").select("tr.summary").append("th").attr("width","76%").text("Borough").attr("class","summary");
+		          d3.select("table.summary").select("tr.summary").append("th").attr("width","14%").text("Trend").attr("class","summary");
+
+		          // As I need to get the top 3 and worst 3, as well as a separation, I'm using the rank (starting at 0) with 0,1,2 as Top3 and 29,30,31 as Worst3. The 3 will be used for separation
+		          trs = summary.selectAll("table").data([0,1,2,3,29,30,31]);
+	          	  tds = trs.enter().append("tr").attr("class","summary").style("height","20px");
+		          
+	          	  // On the first column I insert the rank
+		          tds.append("td")
+		          .attr("class","summary")
+		          .text(function(d){
+
+		          	// If the dataset index is 3, then I add "..." as separation
+		          	if(d === 3){
+		          		return "...";
+		          	}
+
+		          	// Otherwise I include the rank : 0=1st, 1=2nd etc..
+		          	else{
+		            return +d + 1;
+		        }
+		          });
+
+		          // On the second column I insert the borough's name except if we're on index 3
+		          tds.append("td")
+		          .attr("class","summary")
+		          .text(function(d){
+		          	if(d === 3){
+		          		return "...";
+		          	}
+		          	else{
+		            return boroughs_ranking[d].key;
+		        	}
+		          });
+
+		          // On the third column I insert the trend with the corresponding style (Green Down-Arrow for decrease, Red Up-Arrow for increase)
+		          tds.append("td")
+		          .attr("class","summary")
+		          .html(function(d){
+		          	if(d === 3){
+		          		return "...";
+		          	}
+		          	else{
+		            	if(boroughs_ranking[d].values['Trend'] < 0){
+				      		return "&#8600; " + Math.abs(boroughs_ranking[d].values['Trend']) + "%"
+				      	}
+				      	else{
+				      		return "&#8599; " + Math.abs(boroughs_ranking[d].values['Trend']) + "%"
+				      	}
+		        	}
+		          })
+		          .style("color",function(d){
+		          	if(d === 3){
+		          		return "black";
+		          	}
+		          	else{
+		            	if(boroughs_ranking[d].values['Trend'] < 0){
+				      		return "green";
+				      	}
+				      	else{
+				      		return "red";
+				      	}
+		        	}
+
+		          })
+		          .style("font-weight",function(d){
+		          	if(d != 3){
+		          		return "bold";
+		          	}
+		          });
+
+
+            })
+            .on("mouseout", function(d){
+            	d3.select("div.borough").remove();
+            	d3.select("div.ranking").remove();
+            	d3.select("table.summary").remove();
+            	insert_summary(data,"All Boroughs",attribute);
+            })
+            .attr("class","link")
+            .attr("href","#")
+            .text("See Rankings");
+
+          }
+          // Else if the borough is a specific one
+          else{
+
+
+            // I filter the full dataset by the crime category that is selected on the radio buttons and the selected borough
+            var boroughs_attribute = data
+            .filter(function(d){
+              return d.Borough.split(" ")[0] === borough && d.MajorText === attribute;
+            });
+
+            // I then nest this dataset by sub-category to get full details (count of crimes) for each sub-category
+            var attribute_details = d3.nest()
+            .key(function(d){
+              return d.MinorText;
+            })
+            .rollup(agg_details)
+            .entries(boroughs_attribute);
+
+
+            // I get the population number
+            population = +boroughs_attribute[0].Population;
+
+            // I get the full name of the borough
+            borough_full = boroughs_attribute[0].Borough;
+          }
+
+          // I add a div to include the Borough's name as well as the population
+          d3.select("body")
+          .append("div")
+          .attr("class","borough")
+          .html(borough_full + "<br><span>Population: " + population.toLocaleString() + "</span>");
+
+          // I append a table in order to insert the summary
+          summary = d3.select(".summary")
+          .append("table")
+          .attr("class","summary");
+
+          // I add a header for the table
+          summary.append("tr").attr("class","summary").append("th").attr("width","50%").attr("class","summary").text("Sub-Category");
+          d3.select("table.summary").select("tr.summary").append("th").attr("width","18%").text("2014").attr("class","summary");
+          d3.select("table.summary").select("tr.summary").append("th").attr("width","18%").text("2015").attr("class","summary");
+          d3.select("table.summary").select("tr.summary").append("th").attr("class","summary");
+
+          // I sort the sub-categories by number of crimes in order to show the most recurrent crime type on top of the list
+          attribute_details = attribute_details.sort(function(a, b){return d3.descending(a.values['2014'], b.values['2014'])});
+
+          // I setup variables in order to add lines and columns for each sub-category
+          trs = summary.selectAll("table").data(attribute_details);
+          tds = trs.enter().append("tr").attr("class","summary");
+
+          // On the first column I insert the sub-category of crimes
+          tds.append("td")
+          .attr("class","summary")
+          .text(function(d){
+            return d.key;
+          });
+
+          // On the second column I insert the count of crimes for that sub-category
+          tds.append("td")
+          .attr("class","summary")
+          .text(function(d){
+            return d.values['2014'].toLocaleString();
+          });
+
+          // On the second column I insert the count of crimes for that sub-category
+          tds.append("td")
+          .attr("class","summary")
+          .text(function(d){
+            return d.values['2015'].toLocaleString();
+          });
+
+          tds.append("td")
+          .attr("class","summary")
+          .html(function(d){
+          	var trend = Math.abs(d.values['Trend']);
+          	if(d.values['2015'] < d.values['2014']){
+          	return "&#8600; " + trend + "%" ;
+          }
+          else if(d.values['2015'] > d.values['2014']){
+          	if(d.values['2014'] === 0){
+          		trend = "Inf";
+          	}
+          	return "&#8599; " + trend + "%";	
+          }
+          else{
+          	return "--"
+          }}
+          	)
+          .style("font-weight","bold")
+          .style("color",function(d){
+        	if(d.values['2015'] < d.values['2014']){
+          	return "green";
+          }
+          else if(d.values['2015'] > d.values['2014']){
+          	return "red";	
+          }
+      	  else{
+      	  	return "orange";
+      		}});
+
+
+        // I create a variable that looks at the total of crimes (not looking at sub-categories)
+      	var attribute_total = d3.nest()
+      	.rollup(agg_details)
+      	.entries(boroughs_attribute);
+
+        // I then add a table showing the total of the borough/all boroughs
+        var total = d3.select("div.summary")
+        .append("table")
+        .attr("class","summary total");
+
+        // Creating the table with 4 columns : "Total", "Count for 2014", "Count for 2015", "Trend"
+        total.append("tr").attr("class","summary").append("th").attr("width","50%").attr("class","summary").text("Total");
+        d3.select("table.total").select("tr.summary").append("th").attr("width","18%").text(attribute_total['2014'].toLocaleString()).attr("class","summary");
+      	d3.select("table.total").select("tr.summary").append("th").attr("width","18%").text(attribute_total['2015'].toLocaleString()).attr("class","summary");
+
+      	// If the trend is negative : Green color and up-arrow, otherwise Red color and down-arrow
+      	if(attribute_total['Trend'] < 0){
+      		d3.select("table.total").select("tr.summary").append("th").html("&#8600; " + Math.abs(attribute_total['Trend']) + "%").style("color","green").attr("class","summary");
+      	}
+      	else{
+      		d3.select("table.total").select("tr.summary").append("th").html("&#8599; " + Math.abs(attribute_total['Trend']) + "%").style("color","red").attr("class","summary");
+      	}
+
+        }
+
+        // Function to color the boroughs with a scale of colours
+        function draw_attribute(data,attribute){
+
+          // Aggregating function to count the number of Crimes for each borough
+          function agg_crimes(leaves){
+          return{
+            'Count' : d3.sum(leaves,function(d){return d['CrimeCount'];})
+                }
+          }
+
+          // Filtering the dataset with chosen attribute
+          var boroughs_summary = data
+          .filter(function(d){
+          return d['MajorText'] === attribute;});
+
+          // Nesting function to count the number of crimes for each Borough
+          var boroughs_attribute = d3.nest()
+          .key(function(d){
+            return d.Borough + " " + d.Season;
+            })
+          .rollup(agg_crimes)
+          .entries(boroughs_summary);
+
+          boroughs_attribute = boroughs_attribute.sort(function(a, b){return d3.ascending(a.key, b.key)});
+
+          // Using ordinal scale of colours
+          var brewer = ['rgb(0,104,55)','rgb(26,152,80)','rgb(102,189,99)','rgb(166,217,106)','rgb(217,239,139)','rgb(255,255,191)','rgb(254,224,139)','rgb(253,174,97)','rgb(244,109,67)','rgb(215,48,39)','rgb(165,0,38)'];
+
+          // For each borough
+          for (i=0; i<boroughs_attribute.length/2;i++){
+
+            // We get the borough name as well as the number of crimes per capita
+            var borough_name = boroughs_attribute[i*2].key.split(" ")[0];
+            var previous_year = boroughs_attribute[i*2].values['Count'];
+            var current_year = boroughs_attribute[i*2+1].values['Count'];
+            var trend = (current_year - previous_year)*100/previous_year;
+
+            var percentages = [-25,-20,-15,-10,-5,0,5,10,15,20,25];
+
+			var closest = percentages.reduce(function (prev, curr) {
+				  return (Math.abs(curr - trend) < Math.abs(prev - trend) ? curr : prev);
+			});
+
+            // We then fill the path with the corresponding colour
+            d3.select("path." + borough_name)
+            .transition()
+            .duration(1000)
+            .style("fill",function(d){
+              var borough = d.properties.Name;
+              return brewer[percentages.indexOf(closest)];
+            });
+
+          }   
+        }
+
+        // For the initialization of the map, we use the first crime category and "All Boroughs"
+        draw_attribute(data,attribute);
+        insert_summary(data, "All Boroughs",attribute);
+      };
+
+      </script>
+  </head>
+<body>
+  <script>
+
+  // Calling draw_map callback function in order to draw the borough boundaries
+  d3.json("London.geojson", draw_map);
+
+  // Calling draw_data function which will use the data from the tsv file
+  d3.tsv("Boroughs.tsv", function(d){
+
+    // Removing some crime types as the number were too low
+    if (d.MajorText != "Fraud & Forgery" && d.MajorText != "Other Notifiable Offences"){
+      return d;
+    }
+  },draw_data);
+
+  </script>
+</body>
+</html>
